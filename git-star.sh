@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
 
+VERSION=0.0.1
+
+case $1 in
+    -h|--help)
+        printf "Shows the GitHub stars and forks count.\n"
+        printf "Usage:\n"
+        printf "\tgit star\n"
+        exit
+        ;;
+    -v|-V|--version)
+        printf "git-star %s\n" "$VERSION"
+        exit
+        ;;
+    *)
+        shift
+        ;;
+esac
+
 # are we in a git repo?
 if ! git rev-parse --is-inside-work-tree &>/dev/null; then
   echo 'Not a git repository.' 1>&2
@@ -8,8 +26,6 @@ fi
 
 # choose remote. priority to: provided argument, default in config, detected tracked remote, 'origin'
 branch=${2:-$(git symbolic-ref -q --short HEAD)}
-upstream_branch_full_name=$(git config "branch.$branch.merge")
-upstream_branch=${upstream_branch_full_name#"refs/heads/"}
 tracked_remote=$(git config "branch.$branch.remote")
 default_remote=$(git config open.default.remote)
 remote=${1:-$default_remote}
@@ -40,7 +56,7 @@ else
   domain=${uri%%:*} urlpath=${uri#*:} # Split on first ':' to get server name and path
 fi
 
-if [ $domain != 'github.com' ]; then
+if [ "$domain" != 'github.com' ]; then
   echo 'Not a Github repository.' 1>&2
   exit 1
 fi
@@ -48,5 +64,5 @@ fi
 urlpath=${urlpath#/} urlpath=${urlpath%/} urlpath=${urlpath%.git} # Trim "/" from beginning of URL; "/" and ".git" from end of URL
 user=${urlpath%%/*} repo=${urlpath#*/} # get user & repo
 
-printf "https://$domain/$urlpath\n"
-curl --silent https://api.github.com/repos/$user/$repo | jq --raw-output '"★ Star \(.stargazers_count) · ⑂ Fork \(.forks)"'
+printf 'https://%s/%s\n' "$domain" "$urlpath"
+curl --silent "https://api.github.com/repos/$user/$repo" | jq --raw-output '"★ Star \(.stargazers_count) · ⑂ Fork \(.forks)"'
